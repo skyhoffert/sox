@@ -1,0 +1,5 @@
+//
+// main.sox
+// 
+
+stdout("Hello, sox world!\n");
