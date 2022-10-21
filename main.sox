@@ -2,4 +2,9 @@
 // main.sox
 // 
 
-stdout("Hello, sox world!\n");
+// int8 test_int8 = -12;
+// uint8 test_uint8 = 37;
+// int32 test_int32 = 304143;
+// string test_string = "a test string.";
+
+stdout("Hello, sox!\n");
