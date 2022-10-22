@@ -1,0 +1,67 @@
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Variables.
+
+uint8 a = 12;
+int32 b = -20;
+int64 c = 34981348;
+
+string d = "";
+string e = "test string";
+
+bool f = 0;
+bool g = 1;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Printing to screen.
+
+stdout("msg\n");
+stderr("err msg\n");
+
+stdout("%s = %d\n", e, b);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Sockets.
+
+tcp_server serv_a("localhost", 5010);
+tcp_client client_a("localhost", 5010);
+
+tcp_server serv_b("localhost", 5011, <OR-ed options>);
+tcp_client client_b("localhost", 5011, <OR-ed options>);
+
+setsockopt(serv_a, 1, SO_REUSEADDR);
+setsockopt(serv_a, 0, SO_LINGER);
+
+udp_server serv_c("localhost", 5012);
+udp_client client_c("localhost", 5012);
+
+udp_client client_d("localhost", 5012, WAIT_TO_CONNECT);
+
+connect(client_d);
+
+send(client_d, "msg"); // sox knows client_d is UDP.
+send(client_d, e);
+send(client_d, "%s\n", e); // Can format directly in send.
+
+string rx_a = recv(serv_d); // Blocking.
+string rx_b = recv_nonblock(serv_d);  // This may return an empty string.
+
+bool client_a_connected = is_connected(client_a);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Functions.
+
+// PENDING
+// bool: return type
+// is_zero: bool functions USUALLY start with "is_".
+// ?int?: means ANY integer type i.e. int8, uint8, int32, etc.
+// a: parameter name. Local variable.
+bool is_zero(?int? a)
+{
+    return a == 0;
+}
+
+bool is_zero(int8 a)
+{
+    return a == 0;
+}

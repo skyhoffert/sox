@@ -2,9 +2,19 @@
 // main.sox
 // 
 
-// int8 test_int8 = -12;
-// uint8 test_uint8 = 37;
-// int32 test_int32 = 304143;
-// string test_string = "a test string.";
-
 stdout("Hello, sox!\n");
+stderr("err msg\n");
+stdout("next msg : ");
+stdout(" without newline.\n");
+stderr("final err msg\n");
+stdout("final msg\n\n");
+
+int8 test_int8 = -12;
+stdout("%s = %d\n", "test_int8", test_int8);
+
+string test_string = "a test string.";
+stdout("test_string: \"%s\"\n", test_string);
+
+bool test_bool_a = 0;
+bool test_bool_b = 1;
+stdout("test_bools : a:%b, b:%b\n", test_bool_a, test_bool_b);
