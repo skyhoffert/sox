@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define bool char
 #define true 1
@@ -14,6 +16,11 @@
 #define ERR_BAD_BIND        101
 #define ERR_BAD_ADDR_CONV   102
 #define ERR_BAD_PORT_CONV   103
+#define ERR_BAD_LISTEN      104
+
+#define SOX_NONE            100
+#define SOX_CONNECT         101
+#define SOX_RECV            102
 
 struct sock
 {
@@ -22,13 +29,16 @@ struct sock
     int fd;
     char ip[16];
     int port;
+
+    int connfd; // Only for TCP sockets.
 };
 
 static volatile bool active = true;
 
 int setup_sock(struct sock* s);
 int close_sock(struct sock* s);
-int check_sock(struct sock* s);
+int tick_sock(struct sock* s, int* stype, char* buf);
+
 void sigint() { active = false; }
 
 int main(int argc, char* argv[])
@@ -51,21 +61,33 @@ int main(int argc, char* argv[])
         return retval;
     }
 
+    int stype = 0;
+    char buf[1024];
+
     while (active)
     {
-        check_sock(&s);
+        retval = tick_sock(&s, &stype, buf);
+
+        if (retval != 0)
+        {
+            printf("ERR: Tick retval %d.\n", retval);
+            break;
+        }
+
         sleep(1);
     }
 
-    printf("\nINF: Success. Closing.\n");
-
     close_sock(&s);
+
+    printf("\nINF: Exiting.\n");
 
     return 0;
 }
 
 int setup_sock(struct sock* s)
 {
+    s->connfd = -1;
+
     if (s->port <= 1024 || s->port >= 65534)
     {
         return ERR_BAD_PORT_CONV;
@@ -104,6 +126,15 @@ int setup_sock(struct sock* s)
         return ERR_BAD_BIND;
     }
 
+    if (s->is_tcp == true)
+    {
+        retval = listen(s->fd, 1);
+        if (retval != 0)
+        {
+            return ERR_BAD_LISTEN;
+        }
+    }
+
     return 0;
 }
 
@@ -112,9 +143,68 @@ int close_sock(struct sock* s)
     close(s->fd);
 }
 
-int check_sock(struct sock* s)
+int tick_sock(struct sock* s, int* stype, char* buf)
 {
-    printf(".");
-    fflush(stdout);
+    int retval = 0;
+    struct timeval tv;
+
+    if (s->connfd == -1)
+    {
+        if (s->is_server == true)
+        {
+            fd_set fds;
+            FD_ZERO(&fds);
+            FD_SET(s->fd, &fds);
+            tv.tv_sec = 0;
+            tv.tv_usec = 100000;
+
+            retval = select(s->fd+1, &fds, NULL, NULL, &tv);
+
+            if (retval == -1)
+            {
+                printf("ERR: select error in tcp, server, listen.\n");
+            }
+            else if (retval == 0)
+            {
+                printf(".");
+                fflush(stdout);
+            }
+            else if (FD_ISSET(s->fd, &fds))
+            {
+                s->connfd = accept(s->fd, NULL, 0);
+                if (s->connfd == -1)
+                {
+                    printf("ERR: On tcp, server, accept.\n");
+                }
+                else
+                {
+                    printf("INF: tcp, server, accept: connect!\n");
+                }
+            }
+        }
+    }
+    else
+    {
+        char b[1];
+        retval = recv(s->connfd, b, 1, MSG_PEEK | MSG_DONTWAIT);
+
+        if (retval > 0)
+        {
+            retval = recv(s->connfd, buf, 1024, 0);
+            printf("data: %s\n", buf);
+        }
+        else if (retval == -1)
+        {
+            printf("%dx", retval);
+            fflush(stdout);
+        }
+        else if (retval == 0)
+        {
+            printf("ERR: Conn dropped.\n");
+            close(s->connfd);
+            s->connfd = -1;
+        }
+    }
+
     return 0;
 }
